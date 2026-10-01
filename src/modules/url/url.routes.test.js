@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import express from 'express';
+import createUrlRouter from './url.routes.js';
+
+async function startTestServer(pool) {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/urls', createUrlRouter({
+    pool,
+    baseUrl: 'https://short.example',
+  }));
+
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise((resolve) => server.once('listening', resolve));
+  const address = server.address();
+
+  return {
+    url: `http://127.0.0.1:${address.port}`,
+    close: () => new Promise((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    }),
+  };
+}
+
+test('GET /api/urls returns URL history', async (t) => {
+  const history = [{
+    id: 1,
+    originalUrl: 'https://example.com/',
+    shortCode: 'abc1234',
+    createdAt: '2026-10-01T12:00:00.000Z',
+    clickCount: 2,
+    lastClickedAt: '2026-10-01T13:00:00.000Z',
+  }];
+  const pool = {
+    async query(sql) {
+      assert.match(sql, /LEFT JOIN clicks/);
+      return { rows: history };
+    },
+  };
+  const server = await startTestServer(pool);
+  t.after(() => server.close());
+
+  const response = await fetch(`${server.url}/api/urls`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), history);
+});
+
+test('GET /api/urls/:code/qr returns a PNG QR of the full short URL', async (t) => {
+  const pool = {
+    async query(sql, values) {
+      assert.match(sql, /SELECT short_code FROM urls/);
+      assert.deepEqual(values, ['abc1234']);
+      return { rows: [{ short_code: 'abc1234' }] };
+    },
+  };
+  const server = await startTestServer(pool);
+  t.after(() => server.close());
+
+  const response = await fetch(`${server.url}/api/urls/abc1234/qr`);
+  const image = Buffer.from(await response.arrayBuffer());
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /image\/png/);
+  assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+});
+
+test('QR endpoint returns 404 for an unknown short code', async (t) => {
+  const pool = {
+    async query() {
+      return { rows: [] };
+    },
+  };
+  const server = await startTestServer(pool);
+  t.after(() => server.close());
+
+  const response = await fetch(`${server.url}/api/urls/missing/qr`);
+
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), {
+    error: 'Short URL was not found.',
+  });
+});

@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import QRCode from 'qrcode';
 
 export class UrlInputError extends Error {
   constructor(message) {
@@ -11,6 +12,13 @@ export class ShortCodeGenerationError extends Error {
   constructor() {
     super('Could not generate a unique short code. Please try again.');
     this.name = 'ShortCodeGenerationError';
+  }
+}
+
+export class ShortUrlNotFoundError extends Error {
+  constructor() {
+    super('Short URL was not found.');
+    this.name = 'ShortUrlNotFoundError';
   }
 }
 
@@ -78,4 +86,18 @@ export async function createShortUrl(
   }
 
   throw new ShortCodeGenerationError();
+}
+
+export async function createShortUrlQr(code, { pool, baseUrl }) {
+  const { rows } = await pool.query(
+    'SELECT short_code FROM urls WHERE short_code = $1',
+    [code],
+  );
+
+  if (rows.length === 0) {
+    throw new ShortUrlNotFoundError();
+  }
+
+  const shortUrl = new URL(rows[0].short_code, `${new URL(baseUrl).origin}/`).href;
+  return QRCode.toBuffer(shortUrl, { type: 'png' });
 }
