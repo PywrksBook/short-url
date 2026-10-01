@@ -68,6 +68,61 @@ test('GET /api/urls rejects invalid page numbers', async (t) => {
   });
 });
 
+test('POST /api/urls accepts an optional custom alias', async (t) => {
+  const pool = {
+    async query(_sql, [originalUrl, shortCode]) {
+      assert.equal(shortCode, 'promo2026');
+      return {
+        rows: [{
+          original_url: originalUrl,
+          short_code: shortCode,
+          created_at: '2026-10-01T00:00:00.000Z',
+        }],
+      };
+    },
+  };
+  const server = await startTestServer(pool);
+  t.after(() => server.close());
+
+  const response = await fetch(`${server.url}/api/urls`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      originalUrl: 'https://example.com',
+      customAlias: 'promo2026',
+    }),
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal((await response.json()).shortUrl, 'https://short.example/promo2026');
+});
+
+test('POST /api/urls returns 409 when a custom alias is already used', async (t) => {
+  const pool = {
+    async query() {
+      const error = new Error('duplicate key');
+      error.code = '23505';
+      throw error;
+    },
+  };
+  const server = await startTestServer(pool);
+  t.after(() => server.close());
+
+  const response = await fetch(`${server.url}/api/urls`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      originalUrl: 'https://example.com',
+      customAlias: 'promo2026',
+    }),
+  });
+
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    error: 'This custom alias is already in use. Please choose another one.',
+  });
+});
+
 test('GET /api/urls/:code/qr returns a PNG QR of the full short URL', async (t) => {
   const pool = {
     async query(sql, values) {

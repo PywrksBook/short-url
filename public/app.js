@@ -1,5 +1,6 @@
 const shortenForm = document.querySelector('#shorten-form');
 const originalUrlInput = document.querySelector('#original-url');
+const customAliasInput = document.querySelector('#custom-alias');
 const shortenButton = document.querySelector('#shorten-button');
 const formMessage = document.querySelector('#form-message');
 const resultCard = document.querySelector('#result-card');
@@ -130,7 +131,10 @@ shortenForm.addEventListener('submit', async (event) => {
     const response = await fetch('/api/urls', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ originalUrl: originalUrlInput.value }),
+      body: JSON.stringify({
+        originalUrl: originalUrlInput.value,
+        customAlias: customAliasInput.value.trim() || undefined,
+      }),
     });
     const result = await response.json();
 

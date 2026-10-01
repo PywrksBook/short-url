@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getUrlHistory } from '../analytics/analytics.service.js';
 import {
+  CustomAliasConflictError,
   createShortUrl,
   createShortUrlQr,
   ShortUrlNotFoundError,
@@ -27,11 +28,20 @@ export default function createUrlRouter({ pool, baseUrl }) {
   // รับ URL จากผู้ใช้ แล้วส่งผลลัพธ์กลับเมื่อบันทึกลงฐานข้อมูลสำเร็จ
   router.post('/', async (req, res, next) => {
     try {
-      const result = await createShortUrl(req.body?.originalUrl, { pool, baseUrl });
+      const result = await createShortUrl(req.body?.originalUrl, {
+        pool,
+        baseUrl,
+        customAlias: req.body?.customAlias,
+      });
       res.status(201).json(result);
     } catch (error) {
       if (error instanceof UrlInputError) {
         res.status(400).json({ error: error.message });
+        return;
+      }
+
+      if (error instanceof CustomAliasConflictError) {
+        res.status(409).json({ error: error.message });
         return;
       }
 

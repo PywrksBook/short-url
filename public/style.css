@@ -168,6 +168,57 @@ h1 {
   color: #aaa4b7;
 }
 
+.alias-field {
+  max-width: 480px;
+  margin-top: 18px;
+}
+
+.alias-field .input-label {
+  margin-bottom: 7px;
+}
+
+.alias-input-row {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.alias-input-row:focus-within {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgb(112 70 197 / 10%);
+}
+
+.alias-prefix {
+  color: var(--purple);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.alias-input-row input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #29213b;
+}
+
+.alias-input-row input::placeholder {
+  color: #aaa4b7;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .button {
   display: inline-flex;
   min-height: 48px;

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  CustomAliasConflictError,
   createShortUrl,
   normalizeOriginalUrl,
   ShortCodeGenerationError,
@@ -86,4 +87,65 @@ test('stops after five short-code collisions', async () => {
     ShortCodeGenerationError,
   );
   assert.equal(calls, 5);
+});
+
+test('uses a valid custom alias as the short code', async () => {
+  let queryValues;
+  const pool = {
+    async query(_sql, values) {
+      queryValues = values;
+      return {
+        rows: [{
+          original_url: values[0],
+          short_code: values[1],
+          created_at: new Date('2026-10-01T00:00:00Z'),
+        }],
+      };
+    },
+  };
+
+  const result = await createShortUrl('https://example.com', {
+    pool,
+    baseUrl,
+    customAlias: 'promo_2026',
+    generateCode: () => assert.fail('Custom alias should not generate a random code'),
+  });
+
+  assert.equal(queryValues[1], 'promo_2026');
+  assert.equal(result.shortCode, 'promo_2026');
+  assert.equal(result.shortUrl, 'https://short.example/promo_2026');
+});
+
+test('rejects invalid and reserved custom aliases', async () => {
+  const pool = { query: async () => assert.fail('Invalid alias must not query database') };
+
+  for (const customAlias of ['ab', 'contains space', 'bad.alias', 'a'.repeat(31), 'api', 'HEALTH', 'static', 'admin']) {
+    await assert.rejects(
+      createShortUrl('https://example.com', { pool, baseUrl, customAlias }),
+      UrlInputError,
+      customAlias,
+    );
+  }
+});
+
+test('reports a conflict when a custom alias is already used', async () => {
+  let calls = 0;
+  const pool = {
+    async query() {
+      calls += 1;
+      const error = new Error('duplicate key');
+      error.code = '23505';
+      throw error;
+    },
+  };
+
+  await assert.rejects(
+    createShortUrl('https://example.com', {
+      pool,
+      baseUrl,
+      customAlias: 'promo2026',
+    }),
+    CustomAliasConflictError,
+  );
+  assert.equal(calls, 1);
 });

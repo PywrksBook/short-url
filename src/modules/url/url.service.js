@@ -15,6 +15,13 @@ export class ShortCodeGenerationError extends Error {
   }
 }
 
+export class CustomAliasConflictError extends Error {
+  constructor() {
+    super('This custom alias is already in use. Please choose another one.');
+    this.name = 'CustomAliasConflictError';
+  }
+}
+
 export class ShortUrlNotFoundError extends Error {
   constructor() {
     super('Short URL was not found.');
@@ -52,16 +59,50 @@ export function normalizeOriginalUrl(input, baseUrl) {
   return url.href;
 }
 
+function normalizeCustomAlias(input) {
+  if (input === undefined || input === null) {
+    return null;
+  }
+
+  if (typeof input !== 'string') {
+    throw new UrlInputError('Custom alias must be text.');
+  }
+
+  const alias = input.trim();
+  if (alias === '') {
+    return null;
+  }
+
+  if (!/^[A-Za-z0-9_-]{3,30}$/.test(alias)) {
+    throw new UrlInputError(
+      'Custom alias must be 3–30 characters and use only letters, numbers, hyphens, or underscores.',
+    );
+  }
+
+  if (['api', 'health', 'static', 'admin'].includes(alias.toLowerCase())) {
+    throw new UrlInputError('This custom alias is reserved. Please choose another one.');
+  }
+
+  return alias;
+}
+
 export async function createShortUrl(
   originalUrl,
-  { pool, baseUrl, generateCode = () => nanoid(7) },
+  {
+    pool,
+    baseUrl,
+    customAlias,
+    generateCode = () => nanoid(7),
+  },
 ) {
   const normalizedUrl = normalizeOriginalUrl(originalUrl, baseUrl);
+  const requestedAlias = normalizeCustomAlias(customAlias);
   const appUrl = `${new URL(baseUrl).origin}/`;
+  const maxAttempts = requestedAlias ? 1 : 5;
 
-  // short_code มี UNIQUE constraint จึงลองสร้างรหัสใหม่ได้เมื่อบังเอิญซ้ำ
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const shortCode = generateCode();
+  // รหัสสุ่มลองใหม่เมื่อชนกัน ส่วน alias ที่ผู้ใช้เลือกต้องแจ้งให้เลือกชื่อใหม่
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const shortCode = requestedAlias || generateCode();
 
     try {
       const { rows } = await pool.query(
@@ -81,6 +122,10 @@ export async function createShortUrl(
     } catch (error) {
       if (error.code !== '23505') {
         throw error;
+      }
+
+      if (requestedAlias) {
+        throw new CustomAliasConflictError();
       }
     }
   }

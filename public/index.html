@@ -48,6 +48,24 @@
               <span aria-hidden="true">→</span>
             </button>
           </div>
+          <div class="alias-field">
+            <label class="input-label" for="custom-alias">ใส่ชื่อลิงก์ของคุณ</label>
+            <div class="alias-input-row">
+              <span class="alias-prefix" aria-hidden="true">/</span>
+              <input
+                id="custom-alias"
+                name="customAlias"
+                type="text"
+                minlength="3"
+                maxlength="30"
+                pattern="[A-Za-z0-9_-]{3,30}"
+                placeholder="เช่น promo2026"
+                autocomplete="off"
+                aria-describedby="alias-hint"
+              >
+            </div>
+            <p id="alias-hint" class="field-hint">ใช้ตัวอักษร a–z, A–Z, ตัวเลข, - หรือ _ ความยาว 3–30 ตัว เว้นว่างเพื่อสุ่มชื่อ</p>
+          </div>
           <p id="form-message" class="form-message" role="status" aria-live="polite"></p>
         </form>
       </section>
