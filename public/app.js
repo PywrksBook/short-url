@@ -164,7 +164,7 @@ copyButton.addEventListener('click', async () => {
   }
 });
 
-refreshHistoryButton.addEventListener('click', loadHistory);
+refreshHistoryButton.addEventListener('click', () => loadHistory(currentPage));
 previousPageButton.addEventListener('click', () => {
   if (currentPage > 1) {
     loadHistory(currentPage - 1);
