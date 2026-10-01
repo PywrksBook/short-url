@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#6d42c1">
+    <meta
+      name="description"
+      content="ย่อลิงก์ สร้าง QR Code และดูสถิติการคลิกได้ในที่เดียว"
+    >
+    <title>Shorturl — ย่อลิงก์ของคุณ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="/style.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Shorturl หน้าแรก">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span>shorturl</span>
+      </a>
+    </header>
+
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">SHORT URL, MADE SIMPLE</p>
+        <h1 id="page-title">ย่อลิงก์ของคุณ</h1>
+
+        <form id="shorten-form" class="shorten-form">
+          <label class="input-label" for="original-url">ลิงก์ต้นฉบับ</label>
+          <div class="input-row">
+            <span class="link-icon" aria-hidden="true">↗</span>
+            <input
+              id="original-url"
+              name="originalUrl"
+              type="url"
+              placeholder="https://example.com/your-long-link"
+              autocomplete="url"
+              required
+            >
+            <button id="shorten-button" class="button button-primary" type="submit">
+              <span class="button-label">ย่อลิงก์</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+          <p id="form-message" class="form-message" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="result-card" class="result-card" aria-labelledby="result-title" hidden>
+        <div class="qr-frame">
+          <img id="result-qr" class="result-qr" alt="QR Code สำหรับเปิดลิงก์ย่อ">
+        </div>
+        <div class="result-content">
+          <p class="success-label"><span aria-hidden="true">✓</span> ลิงก์ของคุณพร้อมใช้งานแล้ว</p>
+          <h2 id="result-title" class="visually-hidden">ลิงก์ย่อที่สร้างแล้ว</h2>
+          <a id="result-link" class="result-link" target="_blank" rel="noopener noreferrer"></a>
+          <div class="result-actions">
+            <button id="copy-button" class="button button-primary" type="button">
+              <span aria-hidden="true">▢</span>
+              <span>คัดลอกลิงก์</span>
+            </button>
+            <a id="download-qr" class="button button-secondary" download>
+              <span aria-hidden="true">↓</span>
+              <span>ดาวน์โหลด QR</span>
+            </a>
+          </div>
+          <p id="copy-message" class="copy-message" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="history-section" aria-labelledby="history-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR LINKS</p>
+            <h2 id="history-title">ประวัติลิงก์</h2>
+          </div>
+          <button id="refresh-history" class="button button-secondary refresh-button" type="button">
+            <span aria-hidden="true">↻</span> รีเฟรช
+          </button>
+        </div>
+        <p class="history-note">รายการลิงก์ที่สร้างในระบบนี้ พร้อมจำนวนคลิกและเวลาที่เปิดล่าสุด</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">ลิงก์ย่อ</th>
+                <th scope="col">ปลายทาง</th>
+                <th scope="col">คลิก</th>
+                <th scope="col">วันที่สร้าง</th>
+                <th scope="col">คลิกล่าสุด</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+          <p id="history-message" class="history-message" role="status" aria-live="polite"></p>
+        </div>
+        <nav id="history-pagination" class="history-pagination" aria-label="หน้าประวัติลิงก์" hidden>
+          <button id="previous-page" class="button button-secondary" type="button">← ก่อนหน้า</button>
+          <span id="page-indicator" class="page-indicator" aria-live="polite"></span>
+          <button id="next-page" class="button button-secondary" type="button">ถัดไป →</button>
+        </nav>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span class="footer-mark" aria-hidden="true">S</span>
+    </footer>
+  </body>
+</html>

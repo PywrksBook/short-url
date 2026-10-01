@@ -11,8 +11,14 @@ export default function createUrlRouter({ pool, baseUrl }) {
   const router = Router();
 
   router.get('/', async (req, res, next) => {
+    const page = Number(req.query.page ?? 1);
+    if (!Number.isInteger(page) || page < 1) {
+      res.status(400).json({ error: 'Page must be a positive whole number.' });
+      return;
+    }
+
     try {
-      res.json(await getUrlHistory(pool));
+      res.json(await getUrlHistory(pool, page, 10));
     } catch (error) {
       next(error);
     }

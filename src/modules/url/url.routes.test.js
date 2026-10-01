@@ -23,7 +23,7 @@ async function startTestServer(pool) {
   };
 }
 
-test('GET /api/urls returns URL history', async (t) => {
+test('GET /api/urls returns the requested page of URL history', async (t) => {
   const history = [{
     id: 1,
     originalUrl: 'https://example.com/',
@@ -33,17 +33,39 @@ test('GET /api/urls returns URL history', async (t) => {
     lastClickedAt: '2026-10-01T13:00:00.000Z',
   }];
   const pool = {
-    async query(sql) {
+    async query(sql, values) {
+      if (sql.includes('COUNT(*)')) {
+        return { rows: [{ count: '25' }] };
+      }
       assert.match(sql, /LEFT JOIN clicks/);
+      assert.deepEqual(values, [10, 10]);
       return { rows: history };
     },
   };
   const server = await startTestServer(pool);
   t.after(() => server.close());
 
-  const response = await fetch(`${server.url}/api/urls`);
+  const response = await fetch(`${server.url}/api/urls?page=2`);
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), history);
+  assert.deepEqual(await response.json(), {
+    items: history,
+    page: 2,
+    pageSize: 10,
+    totalItems: 25,
+    totalPages: 3,
+  });
+});
+
+test('GET /api/urls rejects invalid page numbers', async (t) => {
+  const server = await startTestServer({ query: async () => ({ rows: [] }) });
+  t.after(() => server.close());
+
+  const response = await fetch(`${server.url}/api/urls?page=0`);
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    error: 'Page must be a positive whole number.',
+  });
 });
 
 test('GET /api/urls/:code/qr returns a PNG QR of the full short URL', async (t) => {
