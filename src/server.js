@@ -1,9 +1,19 @@
 import 'dotenv/config';
 import express from 'express';
 import pool from './db.js';
+import createUrlRouter from './modules/url/url.routes.js';
+import createRedirectRouter from './modules/redirect/redirect.routes.js';
 
 const app = express();
 app.use(express.json());
+
+const PORT = process.env.PORT || 3000;
+const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+
+// ป้องกันสร้างลิงก์จริงที่ชี้กลับไป localhost หากลืมตั้งค่าโดเมนบน hosting
+if (process.env.NODE_ENV === 'production' && !process.env.BASE_URL) {
+  throw new Error('BASE_URL must be configured in production.');
+}
 
 app.get('/health', async (req, res) => {
   try {
@@ -15,5 +25,25 @@ app.get('/health', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+// แยก route สร้างลิงก์และ route เปิดลิงก์ไว้คนละโมดูล
+app.use('/api/urls', createUrlRouter({ pool, baseUrl }));
+app.use('/', createRedirectRouter({ pool }));
+
+app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+
+  if (err.type === 'entity.parse.failed') {
+    res.status(400).json({ error: 'Request body must contain valid JSON.' });
+    return;
+  }
+
+  console.error('Request failed:', err.message);
+  res.status(500).json({ error: 'An internal error occurred.' });
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+export default app;
